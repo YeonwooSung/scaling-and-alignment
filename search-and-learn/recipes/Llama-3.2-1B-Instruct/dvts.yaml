@@ -1,0 +1,8 @@
+# refer to src/sal/config.py for more options
+
+approach: dvts
+n: 16
+search_batch_size: 25
+dataset_start: 0
+dataset_end: 10
+seed: 42
