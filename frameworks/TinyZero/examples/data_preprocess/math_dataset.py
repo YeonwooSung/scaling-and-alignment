@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data_source = 'lighteval/MATH'
+    data_source = 'DigitalLearningGmbH/MATH-lighteval'
 
     dataset = datasets.load_dataset(data_source, trust_remote_code=True)
 
