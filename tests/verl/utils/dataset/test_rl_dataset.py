@@ -27,8 +27,8 @@ def get_gsm8k_data():
 
 
 def test_rl_dataset():
-    from vetrl.utils.dataset.rl_dataset import RLHFDataset, collate_fn
-    from vetrl.utils import hf_tokenizer
+    from saa.utils.dataset.rl_dataset import RLHFDataset, collate_fn
+    from saa.utils import hf_tokenizer
     tokenizer = hf_tokenizer('deepseek-ai/deepseek-coder-1.3b-instruct')
     local_path = get_gsm8k_data()
     dataset = RLHFDataset(parquet_files=local_path, tokenizer=tokenizer, prompt_key='prompt', max_prompt_length=256)
@@ -37,7 +37,7 @@ def test_rl_dataset():
 
     a = next(iter(dataloader))
 
-    from vetrl import DataProto
+    from saa import DataProto
 
     tensors = {}
     non_tensors = {}

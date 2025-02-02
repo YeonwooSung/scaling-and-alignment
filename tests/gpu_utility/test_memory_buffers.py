@@ -21,7 +21,7 @@ import torch
 import gc
 
 from transformers import LlamaModel, LlamaConfig
-from vetrl.utils.memory_buffer import MemoryBufferModuleWrapper
+from saa.utils.memory_buffer import MemoryBufferModuleWrapper
 
 
 def test_memory_buffers():

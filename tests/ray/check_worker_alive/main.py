@@ -18,9 +18,9 @@ import os
 
 import ray
 
-from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
-from vetrl.single_controller.base.worker import Worker
-from vetrl.single_controller.base.decorator import register, Dispatch
+from saa.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
+from saa.single_controller.base.worker import Worker
+from saa.single_controller.base.decorator import register, Dispatch
 
 
 @ray.remote

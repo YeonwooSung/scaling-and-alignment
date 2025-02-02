@@ -14,10 +14,10 @@
 
 
 def test_import():
-    import vetrl
-    print(vetrl.__version__)
+    import saa
+    print(saa.__version__)
 
 
 def test_single_controller_import():
-    import vetrl.single_controller
-    print(vetrl.single_controller.__version__)
+    import saa.single_controller
+    print(saa.single_controller.__version__)

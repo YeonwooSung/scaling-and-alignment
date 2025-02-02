@@ -17,9 +17,9 @@ e2e test vetrlsingle_controller.ray
 import os
 import ray
 
-from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
-from vetrl.single_controller.base.worker import Worker
-from vetrl.single_controller.base.decorator import register, Dispatch, collect_all_to_all, Execute
+from saa.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
+from saa.single_controller.base.worker import Worker
+from saa.single_controller.base.decorator import register, Dispatch, collect_all_to_all, Execute
 
 
 @ray.remote

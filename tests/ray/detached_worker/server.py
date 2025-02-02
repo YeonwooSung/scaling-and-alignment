@@ -25,18 +25,18 @@ import torch
 from torch import nn
 
 import ray
-from vetrl.single_controller.ray import RayClassWithInitArgs, RayResourcePool
-from vetrl.single_controller.ray.megatron import NVMegatronRayWorkerGroup
-from vetrl.single_controller.base.megatron.worker import MegatronWorker
-from vetrl.single_controller.base.decorator import register, Dispatch
-from vetrl import DataProto
-from vetrl.models.llama.megatron import ParallelLlamaForCausalLMRmPadPP
+from saa.single_controller.ray import RayClassWithInitArgs, RayResourcePool
+from saa.single_controller.ray.megatron import NVMegatronRayWorkerGroup
+from saa.single_controller.base.megatron.worker import MegatronWorker
+from saa.single_controller.base.decorator import register, Dispatch
+from saa import DataProto
+from saa.models.llama.megatron import ParallelLlamaForCausalLMRmPadPP
 
 from megatron.core import parallel_state as mpu
 from megatron.core.models.gpt.gpt_model import ModelType
 from megatron.core import tensor_parallel
-from vetrl.utils.megatron_utils import get_model, init_megatron_optim_config, init_model_parallel_config
-from vetrl.utils.megatron.optimizer import get_megatron_optimizer
+from saa.utils.megatron_utils import get_model, init_megatron_optim_config, init_model_parallel_config
+from saa.utils.megatron.optimizer import get_megatron_optimizer
 
 from transformers import LlamaConfig
 

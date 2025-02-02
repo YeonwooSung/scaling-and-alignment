@@ -14,8 +14,8 @@
 import os
 
 from transformers import AutoTokenizer
-from vetrl.utils import hf_tokenizer
-from vetrl.utils.dataset.sft_dataset import SFTDataset
+from saa.utils import hf_tokenizer
+from saa.utils.dataset.sft_dataset import SFTDataset
 
 
 def get_gsm8k_data():
