@@ -4,6 +4,8 @@ Scaling law and alignment have been essential for LLMs to achieve state-of-the-a
 
 ## verl
 
+[veRL](https://github.com/volcengine/verl) is a flexible, efficient and production-ready RL training library for large language models (LLMs).
+
 ### Run Training
 ```
 conda activate zero
