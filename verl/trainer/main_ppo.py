@@ -15,6 +15,9 @@
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
 
+import ray
+import hydra
+from omegaconf import DictConfig
 from verl import DataProto
 import torch
 from verl.utils.reward_score import gsm8k, math, multiply, countdown
@@ -35,12 +38,12 @@ def _select_rm_score_fn(data_source):
 
 
 class RewardManager():
-    """The reward manager.
-    """
+    """The reward manager."""
 
     def __init__(self, tokenizer, num_examine) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -90,12 +93,9 @@ class RewardManager():
         return reward_tensor
 
 
-import ray
-import hydra
-
 
 @hydra.main(config_path='config', config_name='ppo_trainer', version_base=None)
-def main(config):
+def main(config: DictConfig):
     if not ray.is_initialized():
         # this is for local ray cluster
         ray.init(runtime_env={'env_vars': {'TOKENIZERS_PARALLELISM': 'true', 'NCCL_DEBUG': 'WARN'}})
@@ -176,7 +176,10 @@ def main_task(config):
     # Note that we always use function-based RM for validation
     val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1)
 
-    resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
+    resource_pool_manager = ResourcePoolManager(
+        resource_pool_spec=resource_pool_spec,
+        mapping=mapping
+    )
 
     trainer = RayPPOTrainer(
         config=config,

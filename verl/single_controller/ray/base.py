@@ -175,14 +175,16 @@ class RayClassWithInitArgs(ClassWithInitArgs):
 
 class RayWorkerGroup(WorkerGroup):
 
-    def __init__(self,
-                 resource_pool: RayResourcePool = None,
-                 ray_cls_with_init: RayClassWithInitArgs = None,
-                 bin_pack: bool = True,
-                 name_prefix: str = None,
-                 detached=False,
-                 worker_names=None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        resource_pool: RayResourcePool = None,
+        ray_cls_with_init: RayClassWithInitArgs = None,
+        bin_pack: bool = True,
+        name_prefix: str = None,
+        detached=False,
+        worker_names=None,
+        **kwargs
+    ) -> None:
         super().__init__(resource_pool=resource_pool, **kwargs)
         self.ray_cls_with_init = ray_cls_with_init
         self.name_prefix = get_random_string(length=6) if name_prefix is None else name_prefix
@@ -194,10 +196,12 @@ class RayWorkerGroup(WorkerGroup):
         if self._is_init_with_detached_workers:
             self._init_with_detached_workers(worker_names=worker_names)
         else:
-            self._init_with_resource_pool(resource_pool=resource_pool,
-                                          ray_cls_with_init=ray_cls_with_init,
-                                          bin_pack=bin_pack,
-                                          detached=detached)
+            self._init_with_resource_pool(
+                resource_pool=resource_pool,
+                ray_cls_with_init=ray_cls_with_init,
+                bin_pack=bin_pack,
+                detached=detached
+            )
 
         if ray_cls_with_init is not None:
             self._bind_worker_method(self.ray_cls_with_init.cls, func_generator)

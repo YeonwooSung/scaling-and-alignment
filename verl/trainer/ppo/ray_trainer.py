@@ -295,14 +295,16 @@ class RayPPOTrainer(object):
 
     # TODO: support each role have individual ray_worker_group_cls,
     # i.e., support different backend of different role
-    def __init__(self,
-                 config,
-                 tokenizer,
-                 role_worker_mapping: dict[Role, WorkerType],
-                 resource_pool_manager: ResourcePoolManager,
-                 ray_worker_group_cls: RayWorkerGroup = RayWorkerGroup,
-                 reward_fn=None,
-                 val_reward_fn=None):
+    def __init__(
+        self,
+        config,
+        tokenizer,
+        role_worker_mapping: dict[Role, WorkerType],
+        resource_pool_manager: ResourcePoolManager,
+        ray_worker_group_cls: RayWorkerGroup = RayWorkerGroup,
+        reward_fn=None,
+        val_reward_fn=None
+    ):
 
         # assert torch.cuda.is_available(), 'cuda must be available on driver'
 
@@ -329,9 +331,11 @@ class RayPPOTrainer(object):
                 self.kl_ctrl = core_algos.FixedKLController(kl_coef=config.algorithm.kl_ctrl.kl_coef)
             elif config.algorithm.kl_ctrl.type == 'adaptive':
                 assert config.algorithm.kl_ctrl.horizon > 0, f'horizon must be larger than 0. Got {config.critic.kl_ctrl.horizon}'
-                self.kl_ctrl = core_algos.AdaptiveKLController(init_kl_coef=config.algorithm.kl_ctrl.kl_coef,
-                                                               target_kl=config.algorithm.kl_ctrl.target_kl,
-                                                               horizon=config.algorithm.kl_ctrl.horizon)
+                self.kl_ctrl = core_algos.AdaptiveKLController(
+                    init_kl_coef=config.algorithm.kl_ctrl.kl_coef,
+                    target_kl=config.algorithm.kl_ctrl.target_kl,
+                    horizon=config.algorithm.kl_ctrl.horizon
+                )
             else:
                 raise NotImplementedError
         else:
@@ -339,35 +343,45 @@ class RayPPOTrainer(object):
 
         self._create_dataloader()
 
+
     def _create_dataloader(self):
         from torch.utils.data import DataLoader
         # TODO: we have to make sure the batch size is divisible by the dp size
         from verl.utils.dataset.rl_dataset import RLHFDataset, collate_fn
-        self.train_dataset = RLHFDataset(parquet_files=self.config.data.train_files,
-                                         tokenizer=self.tokenizer,
-                                         prompt_key=self.config.data.prompt_key,
-                                         max_prompt_length=self.config.data.max_prompt_length,
-                                         filter_prompts=True,
-                                         return_raw_chat=self.config.data.get('return_raw_chat', False),
-                                         truncation='error')
-        self.train_dataloader = DataLoader(dataset=self.train_dataset,
-                                           batch_size=self.config.data.train_batch_size,
-                                           shuffle=True,
-                                           drop_last=True,
-                                           collate_fn=collate_fn)
 
-        self.val_dataset = RLHFDataset(parquet_files=self.config.data.val_files,
-                                       tokenizer=self.tokenizer,
-                                       prompt_key=self.config.data.prompt_key,
-                                       max_prompt_length=self.config.data.max_prompt_length,
-                                       filter_prompts=True,
-                                       return_raw_chat=self.config.data.get('return_raw_chat', False),
-                                       truncation='error')
-        self.val_dataloader = DataLoader(dataset=self.val_dataset,
-                                         batch_size=len(self.val_dataset),
-                                         shuffle=True,
-                                         drop_last=True,
-                                         collate_fn=collate_fn)
+        self.train_dataset = RLHFDataset(
+            parquet_files=self.config.data.train_files,
+            tokenizer=self.tokenizer,
+            prompt_key=self.config.data.prompt_key,
+            max_prompt_length=self.config.data.max_prompt_length,
+            filter_prompts=True,
+            return_raw_chat=self.config.data.get('return_raw_chat', False),
+            truncation='error'
+        )
+        self.train_dataloader = DataLoader(
+            dataset=self.train_dataset,
+            batch_size=self.config.data.train_batch_size,
+            shuffle=True,
+            drop_last=True,
+            collate_fn=collate_fn,
+        )
+
+        self.val_dataset = RLHFDataset(
+            parquet_files=self.config.data.val_files,
+            tokenizer=self.tokenizer,
+            prompt_key=self.config.data.prompt_key,
+            max_prompt_length=self.config.data.max_prompt_length,
+            filter_prompts=True,
+            return_raw_chat=self.config.data.get('return_raw_chat', False),
+            truncation='error'
+        )
+        self.val_dataloader = DataLoader(
+            dataset=self.val_dataset,
+            batch_size=len(self.val_dataset),
+            shuffle=True,
+            drop_last=True,
+            collate_fn=collate_fn
+        )
 
         assert len(self.train_dataloader) >= 1
         assert len(self.val_dataloader) >= 1
@@ -441,6 +455,7 @@ class RayPPOTrainer(object):
 
         return metric_dict
 
+
     def init_workers(self):
         """Init resource pool and worker group"""
         self.resource_pool_manager.create_resource_pool()
@@ -450,9 +465,11 @@ class RayPPOTrainer(object):
         # create actor and rollout
         if self.hybrid_engine:
             resource_pool = self.resource_pool_manager.get_resource_pool(Role.ActorRollout)
-            actor_rollout_cls = RayClassWithInitArgs(cls=self.role_worker_mapping[Role.ActorRollout],
-                                                     config=self.config.actor_rollout_ref,
-                                                     role='actor_rollout')
+            actor_rollout_cls = RayClassWithInitArgs(
+                cls=self.role_worker_mapping[Role.ActorRollout],
+                config=self.config.actor_rollout_ref,
+                role='actor_rollout'
+            )
             self.resource_pool_to_cls[resource_pool]['actor_rollout'] = actor_rollout_cls
         else:
             raise NotImplementedError
@@ -497,6 +514,10 @@ class RayPPOTrainer(object):
             # keep the referece of WorkerDict to support ray >= 2.31. Ref: https://github.com/ray-project/ray/pull/45699
             self.wg_dicts.append(wg_dict)
 
+        #
+        # initialize corresponding types of worker group
+        #
+
         if self.use_critic:
             self.critic_wg = all_wg['critic']
             self.critic_wg.init_model()
@@ -513,19 +534,29 @@ class RayPPOTrainer(object):
         self.actor_rollout_wg = all_wg['actor_rollout']
         self.actor_rollout_wg.init_model()
 
+
     def _save_checkpoint(self):
-        actor_local_path = os.path.join(self.config.trainer.default_local_dir, 'actor',
-                                        f'global_step_{self.global_steps}')
+        actor_local_path = os.path.join(
+            self.config.trainer.default_local_dir,
+            'actor',
+            f'global_step_{self.global_steps}'
+        )
+
         actor_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
             self.config.trainer.default_hdfs_dir, 'actor')
         self.actor_rollout_wg.save_checkpoint(actor_local_path, actor_remote_path)
 
         if self.use_critic:
-            critic_local_path = os.path.join(self.config.trainer.default_local_dir, 'critic',
-                                             f'global_step_{self.global_steps}')
+            critic_local_path = os.path.join(
+                self.config.trainer.default_local_dir,
+                'critic',
+                f'global_step_{self.global_steps}'
+            )
+
             critic_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
                 self.config.trainer.default_hdfs_dir, 'critic')
             self.critic_wg.save_checkpoint(critic_local_path, critic_remote_path)
+
 
     def _balance_batch(self, batch: DataProto, metrics, logging_prefix='global_seqlen'):
         """Reorder the data on single controller such that each dp rank gets similar total tokens"""
@@ -533,16 +564,20 @@ class RayPPOTrainer(object):
         batch_size = attention_mask.shape[0]
         global_seqlen_lst = batch.batch['attention_mask'].view(batch_size, -1).sum(-1).tolist()  # (train_batch_size,)
         world_size = self.actor_rollout_wg.world_size
-        global_partition_lst = get_seqlen_balanced_partitions(global_seqlen_lst,
-                                                              k_partitions=world_size,
-                                                              equal_size=True)
+        global_partition_lst = get_seqlen_balanced_partitions(
+            global_seqlen_lst, k_partitions=world_size, equal_size=True
+        )
+
         # reorder based on index. The data will be automatically equally partitioned by dispatch function
         global_idx = torch.tensor([j for partition in global_partition_lst for j in partition])
         batch.reorder(global_idx)
-        global_balance_stats = log_seqlen_unbalance(seqlen_list=global_seqlen_lst,
-                                                    partitions=global_partition_lst,
-                                                    prefix=logging_prefix)
+        global_balance_stats = log_seqlen_unbalance(
+            seqlen_list=global_seqlen_lst,
+            partitions=global_partition_lst,
+            prefix=logging_prefix
+        )
         metrics.update(global_balance_stats)
+
 
     def fit(self):
         """
@@ -553,10 +588,13 @@ class RayPPOTrainer(object):
         from verl.utils.tracking import Tracking
         from omegaconf import OmegaConf
 
-        logger = Tracking(project_name=self.config.trainer.project_name,
-                          experiment_name=self.config.trainer.experiment_name,
-                          default_backend=self.config.trainer.logger,
-                          config=OmegaConf.to_container(self.config, resolve=True))
+        # init the logger for experiment tracking
+        logger = Tracking(
+            project_name=self.config.trainer.project_name,
+            experiment_name=self.config.trainer.experiment_name,
+            default_backend=self.config.trainer.logger,
+            config=OmegaConf.to_container(self.config, resolve=True)
+        )
 
         self.global_steps = 0
 

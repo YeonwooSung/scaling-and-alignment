@@ -63,6 +63,7 @@ class Tracking(object):
 
 
 class _MlflowLoggingAdapter:
+    """Adapter for mlflow to keep the interface consistency with others"""
 
     def log(self, data, step):
         import mlflow
