@@ -16,15 +16,15 @@ import torch
 import copy
 import torch.distributed
 from torch.distributed import init_device_mesh
-from verl.utils.distributed import initialize_global_process_group
-from verl.utils.model import create_random_mask, compute_position_id_with_mask
-from verl.utils.torch_functional import masked_mean, log_probs_from_logits_all_rmpad, logprobs_from_logits
-from verl.utils.ulysses import ulysses_pad_and_slice_inputs, gather_outpus_and_unpad
-from verl.utils.ulysses import get_ulysses_sequence_parallel_world_size, set_ulysses_sequence_parallel_group
-from verl.workers.sharding_manager import FSDPUlyssesShardingManager
-from verl.models.transformers.llama import llama_flash_attn_forward
-from verl.models.transformers.qwen2 import qwen2_flash_attn_forward
-from verl.protocol import DataProto
+from vetrl.utils.distributed import initialize_global_process_group
+from vetrl.utils.model import create_random_mask, compute_position_id_with_mask
+from vetrl.utils.torch_functional import masked_mean, log_probs_from_logits_all_rmpad, logprobs_from_logits
+from vetrl.utils.ulysses import ulysses_pad_and_slice_inputs, gather_outpus_and_unpad
+from vetrl.utils.ulysses import get_ulysses_sequence_parallel_world_size, set_ulysses_sequence_parallel_group
+from vetrl.workers.sharding_manager import FSDPUlyssesShardingManager
+from vetrl.models.transformers.llama import llama_flash_attn_forward
+from vetrl.models.transformers.qwen2 import qwen2_flash_attn_forward
+from vetrl.protocol import DataProto
 from flash_attn.bert_padding import unpad_input, pad_input, index_first_axis, rearrange
 
 from transformers import LlamaConfig, MistralConfig, GemmaConfig, Qwen2Config

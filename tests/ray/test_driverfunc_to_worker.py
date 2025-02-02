@@ -15,12 +15,12 @@
 import os
 import ray
 import torch
-from verl import DataProto
+from vetrl import DataProto
 from tensordict import TensorDict
 
-from verl.single_controller.base.worker import Worker
-from verl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs
-from verl.single_controller.ray import RayWorkerGroup
+from vetrl.single_controller.base.worker import Worker
+from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs
+from vetrl.single_controller.ray import RayWorkerGroup
 
 os.environ['RAY_DEDUP_LOGS'] = '0'
 os.environ['NCCL_DEBUG'] = 'WARN'

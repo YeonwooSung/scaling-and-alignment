@@ -18,9 +18,9 @@ In client, we can get the server handler and send RPC request
 import ray
 import torch
 
-from verl import DataProto
-from verl.single_controller.ray import RayClassWithInitArgs
-from verl.single_controller.ray.megatron import NVMegatronRayWorkerGroup
+from vetrl import DataProto
+from vetrl.single_controller.ray import RayClassWithInitArgs
+from vetrl.single_controller.ray.megatron import NVMegatronRayWorkerGroup
 
 from tensordict import TensorDict
 

@@ -14,8 +14,8 @@
 import os
 
 from transformers import AutoTokenizer
-from verl.utils import hf_tokenizer
-from verl.utils.dataset.rm_dataset import RMDataset
+from vetrl.utils import hf_tokenizer
+from vetrl.utils.dataset.rm_dataset import RMDataset
 
 
 def get_rm_data():

@@ -1,4 +1,4 @@
-python3 -m verl.trainer.main_ppo \
+python3 -m vettrtrainer.main_ppo \
 data.train_files=$DATA_DIR/train.parquet \
 data.val_files=$DATA_DIR/test.parquet \
 data.train_batch_size=256 \

@@ -14,11 +14,11 @@
 
 import ray
 
-from verl.single_controller.base import Worker
-from verl.single_controller.base.decorator import register, Dispatch
-from verl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup, create_colocated_worker_cls
+from vetrl.single_controller.base import Worker
+from vetrl.single_controller.base.decorator import register, Dispatch
+from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup, create_colocated_worker_cls
 
-from verl import DataProto
+from vetrl import DataProto
 
 
 @ray.remote

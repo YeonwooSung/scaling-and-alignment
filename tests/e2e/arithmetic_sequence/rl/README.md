@@ -28,10 +28,10 @@ The users are required to specify the config path and config name (and the relat
 # cd examples/arithmetic_sequence/rl
 
 # Specify the config path and config name (current working dir)
-python3 -m verl.trainer.ppo.ray_megatron_train_synchronous --config-path=$(pwd)/config --config-name='ray_megatron'
+python3 -m vetrltrainer.ppo.ray_megatron_train_synchronous --config-path=$(pwd)/config --config-name='ray_megatron'
 
 # The default relative path of model config is 'config/model_config', if you want to change it, you can rewrite it in ray_megatron.yaml or using:
-python3 -m verl.trainer.ppo.ray_megatron_train_synchronous --config-path=$(pwd)/config --config-name='ray_megatron' ++model.base_path=config/model_config
+python3 -m vetrltrainer.ppo.ray_megatron_train_synchronous --config-path=$(pwd)/config --config-name='ray_megatron' ++model.base_path=config/model_config
 
 ```
 

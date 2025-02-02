@@ -16,8 +16,8 @@ import time
 
 import ray
 
-from verl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup, merge_resource_pool
-from verl.single_controller.base.worker import Worker
+from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup, merge_resource_pool
+from vetrl.single_controller.base.worker import Worker
 
 
 @ray.remote

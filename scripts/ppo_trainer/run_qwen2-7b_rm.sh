@@ -10,7 +10,7 @@ test_files="['$gsm8k_test_path', '$math_test_path']"
 
 export VLLM_ATTENTION_BACKEND=XFORMERS # vllm + qwen2-7b with flash_attn has some issues
 
-python3 -m verl.trainer.main_ppo \
+python3 -m vetrltrainer.main_ppo \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
     data.train_batch_size=1024 \

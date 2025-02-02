@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-e2e test verl.single_controller.ray
+e2e test vetrlsingle_controller.ray
 """
 import os
 import ray
 
-from verl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
-from verl.single_controller.base.worker import Worker
-from verl.single_controller.base.decorator import register, Dispatch, collect_all_to_all, Execute
+from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
+from vetrl.single_controller.base.worker import Worker
+from vetrl.single_controller.base.decorator import register, Dispatch, collect_all_to_all, Execute
 
 
 @ray.remote

@@ -17,9 +17,9 @@ import pytest
 import torch
 from tensordict import TensorDict
 
-from verl.protocol import union_tensor_dict, union_numpy_dict
+from vetrl.protocol import union_tensor_dict, union_numpy_dict
 
-from verl import DataProto
+from vetrl import DataProto
 import numpy as np
 
 
@@ -170,7 +170,7 @@ def test_dataproto_pad_unpad():
     labels = ['a', 'b', 'c']
     data = DataProto.from_dict(tensors={'obs': obs}, non_tensors={'labels': labels}, meta_info={'info': 'test_info'})
 
-    from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
+    from vetrl.protocol import pad_dataproto_to_divisor, unpad_dataproto
 
     padded_data, pad_size = pad_dataproto_to_divisor(data, size_divisor=2)
     assert pad_size == 1
@@ -204,7 +204,7 @@ def test_dataproto_pad_unpad():
 
 
 def test_dataproto_fold_unfold():
-    from verl.protocol import fold_batch_dim, unfold_batch_dim, DataProto
+    from vetrl.protocol import fold_batch_dim, unfold_batch_dim, DataProto
 
     obs = torch.tensor([[1, 2], [3, 4], [5, 6]])
     labels = ['a', 'b', 'c']
@@ -263,9 +263,9 @@ def test_len():
 
 
 def test_seqlen_balancing():
-    from verl.utils.seqlen_balancing import rearrange_micro_batches, get_reverse_idx
+    from vetrl.utils.seqlen_balancing import rearrange_micro_batches, get_reverse_idx
     input_ids = torch.randint(low=0, high=10, size=(20, 100))
-    from verl.utils.model import create_random_mask
+    from vetrl.utils.model import create_random_mask
     attention_mask = create_random_mask(input_ids=input_ids,
                                         max_ratio_of_left_padding=0.1,
                                         max_ratio_of_valid_token=0.9,

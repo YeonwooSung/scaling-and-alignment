@@ -15,18 +15,18 @@
 In this test, we instantiate a data parallel worker with 8 GPUs
 """
 
-from verl.single_controller.base import Worker
-from verl.single_controller.ray import RayWorkerGroup, RayClassWithInitArgs, RayResourcePool
+from vetrl.single_controller.base import Worker
+from vetrl.single_controller.ray import RayWorkerGroup, RayClassWithInitArgs, RayResourcePool
 
-from verl.single_controller.base.decorator import Dispatch, register
+from vetrl.single_controller.base.decorator import Dispatch, register
 
 import ray
 import torch
 
 from torch import distributed as dist
 
-from verl import DataProto
-from verl.utils.ray_utils import parallel_put
+from vetrl import DataProto
+from vetrl.utils.ray_utils import parallel_put
 
 from codetiming import Timer
 

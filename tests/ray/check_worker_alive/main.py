@@ -18,9 +18,9 @@ import os
 
 import ray
 
-from verl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
-from verl.single_controller.base.worker import Worker
-from verl.single_controller.base.decorator import register, Dispatch
+from vetrl.single_controller.ray.base import RayResourcePool, RayClassWithInitArgs, RayWorkerGroup
+from vetrl.single_controller.base.worker import Worker
+from vetrl.single_controller.base.decorator import register, Dispatch
 
 
 @ray.remote
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     ray.init()
 
     # test single-node-no-partition
-    print(f"test single-node-no-partition")
+    print("test single-node-no-partition")
     resource_pool = RayResourcePool([2], use_gpu=True)
     class_with_args = RayClassWithInitArgs(cls=TestActor)
 
