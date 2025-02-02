@@ -20,8 +20,8 @@ import pandas as pd
 
 import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, PreTrainedTokenizer
+from torch.utils.data import Dataset
+from transformers import PreTrainedTokenizer
 from saa.utils.fs import copy_local_path_from_hdfs
 
 from saa.utils.model import compute_position_id_with_mask
@@ -60,16 +60,18 @@ class RLHFDataset(Dataset):
     We assume the dataset contains a column that contains prompts and other information
     """
 
-    def __init__(self,
-                 parquet_files: Union[str, List[str]],
-                 tokenizer: PreTrainedTokenizer,
-                 prompt_key='prompt',
-                 max_prompt_length=1024,
-                 filter_prompts=True,
-                 cache_dir='~/.cache/verl/rlhf',
-                 chat_template_func=None,
-                 return_raw_chat=False,
-                 truncation='error'):
+    def __init__(
+        self,
+        parquet_files: Union[str, List[str]],
+        tokenizer: PreTrainedTokenizer,
+        prompt_key='prompt',
+        max_prompt_length=1024,
+        filter_prompts=True,
+        cache_dir='~/.cache/verl/rlhf',
+        chat_template_func=None,
+        return_raw_chat=False,
+        truncation='error'
+    ):
         if not isinstance(parquet_files, (List, ListConfig)):
             parquet_files = [parquet_files]
 
@@ -88,10 +90,11 @@ class RLHFDataset(Dataset):
         self._download()
         self._read_files_and_tokenize()
 
+
     def _download(self):
-        from saa.utils.fs import copy_local_path_from_hdfs
         for i, parquet_file in enumerate(self.parquet_files):
             self.parquet_files[i] = copy_local_path_from_hdfs(src=parquet_file, cache_dir=self.cache_dir)
+
 
     def _read_files_and_tokenize(self):
         dataframes = []
@@ -112,7 +115,7 @@ class RLHFDataset(Dataset):
         #     tokenizer.apply_chat_template(doc[prompt_key], add_generation_prompt=True)) <= self.max_prompt_length,
         #                                                      axis=1)]
 
-        print(f'filter dataset len: {len(self.dataframe)}')
+        print(f'filtered dataset len: {len(self.dataframe)}')
 
     def __len__(self):
         return len(self.dataframe)
@@ -128,12 +131,14 @@ class RLHFDataset(Dataset):
         prompt_with_chat_template = chat[0]['content']
         # prompt_with_chat_template = chat
 
-        input_ids, attention_mask = verl_F.tokenize_and_postprocess_data(prompt=prompt_with_chat_template,
-                                                                         tokenizer=self.tokenizer,
-                                                                         max_length=self.max_prompt_length,
-                                                                         pad_token_id=self.tokenizer.pad_token_id,
-                                                                         left_pad=True,
-                                                                         truncation=self.truncation)
+        input_ids, attention_mask = verl_F.tokenize_and_postprocess_data(
+            prompt=prompt_with_chat_template,
+            tokenizer=self.tokenizer,
+            max_length=self.max_prompt_length,
+            pad_token_id=self.tokenizer.pad_token_id,
+            left_pad=True,
+            truncation=self.truncation
+        )
 
         position_ids = compute_position_id_with_mask(attention_mask)
 

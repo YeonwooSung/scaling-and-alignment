@@ -341,9 +341,8 @@ class RayPPOTrainer(object):
         )
 
         assert len(self.train_dataloader) >= 1
-        assert len(self.val_dataloader) >= 1
-
         print(f'Size of train dataloader: {len(self.train_dataloader)}')
+        assert len(self.val_dataloader) >= 1
         print(f'Size of val dataloader: {len(self.val_dataloader)}')
 
         # inject total_training_steps to actor/critic optim_config. This is hacky.
@@ -359,6 +358,7 @@ class RayPPOTrainer(object):
         with open_dict(self.config):
             self.config.actor_rollout_ref.actor.optim.total_training_steps = total_training_steps
             self.config.critic.optim.total_training_steps = total_training_steps
+
 
     def _validate(self):
         reward_tensor_lst = []
