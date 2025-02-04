@@ -20,12 +20,14 @@ Each parquet file contains
 
 from typing import List, Union
 
+import numpy as np
 import pandas as pd
 
 import torch
 from torch.utils.data import Dataset
-from transformers import AutoTokenizer, PreTrainedTokenizer
+from transformers import PreTrainedTokenizer
 
+# custom modules
 from saa.utils.fs import copy_local_path_from_hdfs
 from saa.utils.model import compute_position_id_with_mask
 from saa.utils import hf_tokenizer
@@ -36,15 +38,17 @@ class SFTDataset(Dataset):
     This is an in-memory SFTDataset
     """
 
-    def __init__(self,
-                 parquet_files: Union[str, List[str]],
-                 tokenizer,
-                 prompt_key='prompt',
-                 prompt_dict_keys=None,
-                 response_key='response',
-                 response_dict_keys=None,
-                 max_length=1024,
-                 truncation='error'):
+    def __init__(
+        self,
+        parquet_files: Union[str, List[str]],
+        tokenizer,
+        prompt_key='prompt',
+        prompt_dict_keys=None,
+        response_key='response',
+        response_dict_keys=None,
+        max_length=1024,
+        truncation='error'
+    ):
         assert truncation in ['error', 'left', 'right']
         self.truncation = truncation
 
@@ -66,15 +70,16 @@ class SFTDataset(Dataset):
         self._download()
         self._read_files_and_tokenize()
 
+
     def _download(self):
         for i, parquet_file in enumerate(self.parquet_files):
             self.parquet_files[i] = copy_local_path_from_hdfs(parquet_file, verbose=True)
 
+
     def _read_files_and_tokenize(self):
 
         def series_to_item(ls):
-            import pandas, numpy
-            while isinstance(ls, (pandas.core.series.Series, numpy.ndarray)) and len(ls) == 1:
+            while isinstance(ls, (pd.core.series.Series, np.ndarray)) and len(ls) == 1:
                 ls = ls[0]
             return ls
 
@@ -104,8 +109,10 @@ class SFTDataset(Dataset):
                 raise
         self.responses = self.responses.tolist()
 
+
     def __len__(self):
         return len(self.prompts)
+
 
     def __getitem__(self, item):
         tokenizer = self.tokenizer

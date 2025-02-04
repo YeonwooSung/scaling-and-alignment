@@ -28,21 +28,24 @@ import re
 import torch
 import torch.distributed
 from torch import nn, optim
+from torch.distributed.device_mesh import init_device_mesh, DeviceMesh
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, MixedPrecision, ShardingStrategy, CPUOffload
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedModel, AutoConfig
-from saa.utils.torch_functional import get_cosine_schedule_with_warmup
 from tensordict import TensorDict
 from torch.utils.data import DataLoader, DistributedSampler
+import hydra
 
+# custom modules
+from saa.trainer.fsdp_sft_trainer import FSDPSFTTrainer
 from saa.utils.fsdp_utils import get_fsdp_wrap_policy, init_fn, get_init_weight_context_manager
 from saa.utils.dataset import SFTDataset
 from saa.utils.fs import copy_local_path_from_hdfs
 from saa.utils.tracking import Tracking
-
-from torch.distributed.device_mesh import DeviceMesh
-
+from saa.utils.torch_functional import get_cosine_schedule_with_warmup
 import saa.utils.hdfs_io as hdfs_io
 from saa.utils.debug import log_gpu_memory_usage
+from saa.utils.distributed import initialize_global_process_group
+
 
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv('VERL_SFT_LOGGING_LEVEL', 'WARN'))
@@ -89,52 +92,66 @@ class FSDPSFTTrainer(object):
         self.config.data.train_batch_size //= dp_size
         self.config.data.micro_batch_size //= dp_size
 
+
     def _build_dataloader(self):
         config = self.config
         # build dataset
-        self.train_dataset = SFTDataset(parquet_files=config.data.train_files,
-                                        tokenizer=self.tokenizer,
-                                        prompt_key=config.data.prompt_key,
-                                        prompt_dict_keys=config.data.get('prompt_dict_keys', None),
-                                        response_key=config.data.response_key,
-                                        response_dict_keys=config.data.get('response_dict_keys', None),
-                                        max_length=config.data.max_length,
-                                        truncation=config.data.truncation)
-        self.val_dataset = SFTDataset(parquet_files=config.data.val_files,
-                                      tokenizer=self.tokenizer,
-                                      prompt_key=config.data.prompt_key,
-                                      prompt_dict_keys=config.data.get('prompt_dict_keys', None),
-                                      response_key=config.data.response_key,
-                                      response_dict_keys=config.data.get('response_dict_keys', None),
-                                      max_length=config.data.max_length,
-                                      truncation=config.data.truncation)
+        self.train_dataset = SFTDataset(
+            parquet_files=config.data.train_files,
+            tokenizer=self.tokenizer,
+            prompt_key=config.data.prompt_key,
+            prompt_dict_keys=config.data.get('prompt_dict_keys', None),
+            response_key=config.data.response_key,
+            response_dict_keys=config.data.get('response_dict_keys', None),
+            max_length=config.data.max_length,
+            truncation=config.data.truncation
+        )
+        self.val_dataset = SFTDataset(
+            parquet_files=config.data.val_files,
+            tokenizer=self.tokenizer,
+            prompt_key=config.data.prompt_key,
+            prompt_dict_keys=config.data.get('prompt_dict_keys', None),
+            response_key=config.data.response_key,
+            response_dict_keys=config.data.get('response_dict_keys', None),
+            max_length=config.data.max_length,
+            truncation=config.data.truncation
+        )
 
         # build dataloader
         rank = self.device_mesh.get_rank()
         world_size = self.device_mesh.size()
-        self.train_sampler = DistributedSampler(self.train_dataset,
-                                                shuffle=True,
-                                                num_replicas=world_size,
-                                                rank=rank,
-                                                drop_last=True)
-        self.train_dataloader = DataLoader(dataset=self.train_dataset,
-                                           batch_size=config.data.train_batch_size,
-                                           sampler=self.train_sampler,
-                                           num_workers=8,
-                                           pin_memory=True,
-                                           drop_last=True)
+        self.train_sampler = DistributedSampler(
+            self.train_dataset,
+            shuffle=True,
+            num_replicas=world_size,
+            rank=rank,
+            drop_last=True
+        )
+        self.train_dataloader = DataLoader(
+            dataset=self.train_dataset,
+            batch_size=config.data.train_batch_size,
+            sampler=self.train_sampler,
+            num_workers=8,
+            pin_memory=True,
+            drop_last=True,
+        )
 
-        self.val_sampler = DistributedSampler(self.val_dataset,
-                                              shuffle=True,
-                                              num_replicas=world_size,
-                                              rank=rank,
-                                              drop_last=True)
-        self.val_dataloader = DataLoader(dataset=self.val_dataset,
-                                         batch_size=config.data.micro_batch_size,
-                                         sampler=self.val_sampler,
-                                         num_workers=8,
-                                         pin_memory=True,
-                                         drop_last=True)
+        self.val_sampler = DistributedSampler(
+            self.val_dataset,
+            shuffle=True,
+            num_replicas=world_size,
+            rank=rank,
+            drop_last=True,
+        )
+        self.val_dataloader = DataLoader(
+            dataset=self.val_dataset,
+            batch_size=config.data.micro_batch_size,
+            sampler=self.val_sampler,
+            num_workers=8,
+            pin_memory=True,
+            drop_last=True,
+        )
+
 
     def _build_model_optimizer(self):
         # TODO (zhangchi.usc1992):
@@ -157,20 +174,24 @@ class FSDPSFTTrainer(object):
         init_context = get_init_weight_context_manager(use_meta_tensor=not config.tie_word_embeddings)
 
         with init_context():
-            self.model: PreTrainedModel = AutoModelForCausalLM.from_pretrained(local_model_path,
-                                                                               config=config,
-                                                                               torch_dtype=torch.float32,
-                                                                               attn_implementation='flash_attention_2',
-                                                                               trust_remote_code=trust_remote_code)
+            self.model: PreTrainedModel = AutoModelForCausalLM.from_pretrained(
+                local_model_path,
+                config=config,
+                torch_dtype=torch.float32,
+                attn_implementation='flash_attention_2',
+                trust_remote_code=trust_remote_code,
+            )
 
         if self.config.model.enable_gradient_checkpointing:
             self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
 
         log_gpu_memory_usage('After model allocation', logger=logger)
 
-        mixed_precision = MixedPrecision(param_dtype=torch.bfloat16,
-                                         reduce_dtype=torch.float32,
-                                         buffer_dtype=torch.float32)
+        mixed_precision = MixedPrecision(
+            param_dtype=torch.bfloat16,
+            reduce_dtype=torch.float32,
+            buffer_dtype=torch.float32,
+        )
 
         auto_wrap_policy = get_fsdp_wrap_policy(self.model, config=self.config.model.fsdp_config.wrap_policy)
         if self.device_mesh.get_rank() == 0:
@@ -181,23 +202,27 @@ class FSDPSFTTrainer(object):
         else:
             cpu_offload = CPUOffload(offload_params=self.config.model.fsdp_config.offload_params)
 
-        self.fsdp_model = FSDP(module=self.model,
-                               auto_wrap_policy=auto_wrap_policy,
-                               param_init_fn=init_fn,
-                               sharding_strategy=ShardingStrategy.FULL_SHARD,
-                               mixed_precision=mixed_precision,
-                               device_mesh=self.device_mesh,
-                               sync_module_states=True,
-                               device_id=torch.cuda.current_device(),
-                               cpu_offload=cpu_offload,
-                               use_orig_params=False)
+        self.fsdp_model = FSDP(
+            module=self.model,
+            auto_wrap_policy=auto_wrap_policy,
+            param_init_fn=init_fn,
+            sharding_strategy=ShardingStrategy.FULL_SHARD,
+            mixed_precision=mixed_precision,
+            device_mesh=self.device_mesh,
+            sync_module_states=True,
+            device_id=torch.cuda.current_device(),
+            cpu_offload=cpu_offload,
+            use_orig_params=False
+        )
 
         log_gpu_memory_usage('After FSDP wrapping', logger=logger)
 
-        self.optimizer = optim.AdamW(self.fsdp_model.parameters(),
-                                     lr=self.config.optim.lr,
-                                     betas=self.config.optim.betas,
-                                     weight_decay=self.config.optim.weight_decay)
+        self.optimizer = optim.AdamW(
+            self.fsdp_model.parameters(),
+            lr=self.config.optim.lr,
+            betas=self.config.optim.betas,
+            weight_decay=self.config.optim.weight_decay
+        )
 
         log_gpu_memory_usage('After initialize optimizer', logger=logger)
 
@@ -220,10 +245,12 @@ class FSDPSFTTrainer(object):
         labels = batch['input_ids'][:, 1:].cuda()
 
         with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
-            output = self.fsdp_model(input_ids=batch['input_ids'],
-                                     attention_mask=batch['attention_mask'],
-                                     position_ids=batch['position_ids'],
-                                     use_cache=False)  # prevent model thinks it it generating
+            output = self.fsdp_model(
+                input_ids=batch['input_ids'],
+                attention_mask=batch['attention_mask'],
+                position_ids=batch['position_ids'],
+                use_cache=False
+            )
 
         logits = output.logits
 
@@ -315,9 +342,11 @@ class FSDPSFTTrainer(object):
 
         # TODO: add a unified tracking
         if rank == 0:
-            tracking = Tracking(project_name=self.config.trainer.project_name,
-                                experiment_name=self.config.trainer.experiment_name,
-                                default_backend=self.config.trainer.logger)
+            tracking = Tracking(
+                project_name=self.config.trainer.project_name,
+                experiment_name=self.config.trainer.experiment_name,
+                default_backend=self.config.trainer.logger
+            )
 
         global_step = 0
 
@@ -346,14 +375,6 @@ class FSDPSFTTrainer(object):
 
             # save checkpoint
             self.save_checkpoint(step=global_step)
-
-
-from saa.trainer.fsdp_sft_trainer import FSDPSFTTrainer
-import hydra
-
-from torch.distributed.device_mesh import init_device_mesh
-
-from saa.utils.distributed import initialize_global_process_group
 
 
 @hydra.main(config_path='config', config_name='sft_trainer', version_base=None)
