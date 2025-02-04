@@ -2,9 +2,7 @@
 
 Scaling law and alignment have been essential for LLMs to achieve state-of-the-art performance on a wide range of tasks.
 
-## verl
-
-[veRL](https://github.com/volcengine/verl) is a flexible, efficient and production-ready RL training library for large language models (LLMs).
+## Training Instructions
 
 ### Run Training
 ```
@@ -14,7 +12,6 @@ conda activate zero
 For the following code, if you see Out-of-vram, try add `critic.model.enable_gradient_checkpointing=True` to the script
 
 **Single GPU**
-
 
 Works for model <= 1.5B. For Qwen2.5-0.5B base, we know it fails to learn reasoning.
 
@@ -30,6 +27,7 @@ bash ./scripts/train_tiny_zero.sh
 ```
 
 **3B+ model**
+
 In this case, the base model is able to develop sophisticated reasoning skills.
 ```
 export N_GPUS=2
