@@ -45,7 +45,7 @@ from vllm import SamplingParams
 # 3. simplify init logics
 
 
-# NOTE(sgm): add for vetrl We can optimize it by making the dataloader yield List[int] without padding.
+# NOTE(sgm): add for saa. We can optimize it by making the dataloader yield List[int] without padding.
 def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> List[int]:
     # remove the left padding in the prompt token_id
     # pad_token_id = self.llm_engine.tokenizer.pad_token_id if self.llm_engine.tokenizer.pad_token_id is not None else self.llm_engine.tokenizer.eos_token_id

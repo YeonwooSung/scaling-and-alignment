@@ -250,7 +250,7 @@ class Worker(Worker):
         model_input: ModelRunnerInputBase = (self.model_runner.prepare_model_input(
             execute_model_req.seq_group_metadata_list))
 
-        # vetrlworker.workerbase.WorkerBase
+        # saa.worker.workerbase.WorkerBase
         # swap cache
         super().execute_worker(worker_input)
 

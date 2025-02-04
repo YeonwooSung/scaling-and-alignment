@@ -3,7 +3,7 @@ set -x
 train_files=$HOME/data/full_hh_rlhf/rl/train.parquet
 test_files=$HOME/data/full_hh_rlhf/rl/train.parquet # no use
 
-python3 -m vetrltrainer.main_ppo --config-path=./config --config-name='ppo_megatron_trainer'\
+python3 -m saa.trainer.main_ppo --config-path=./config --config-name='ppo_megatron_trainer'\
     data.train_files="$train_files" \
     data.val_files="$test_files" \
     data.train_batch_size=512 \

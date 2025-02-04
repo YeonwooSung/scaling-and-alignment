@@ -2,7 +2,7 @@ set -x
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
 
-python3 -m vetrltrainer.main_ppo \
+python3 -m saa.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/data/gsm8k/train.parquet \
     data.val_files=$HOME/data/gsm8k/test.parquet \

@@ -137,7 +137,7 @@ class LLM(LLM):
         if not isinstance(tokenizer, tokenizer_cls):
             raise ValueError(
                 f"Unexpected tokenizer type: {type(tokenizer)}. Must be"
-                "one of the following: PreTrainedTokenizer, PreTrainedTokenizerFast, vetrlworkers.rollout.HybridEngineBaseTokenizer"
+                "one of the following: PreTrainedTokenizer, PreTrainedTokenizerFast, saa.workers.rollout.HybridEngineBaseTokenizer"
             )
         self.llm_engine = LLMEngine.from_engine_args(model, tokenizer, engine_args)  # TODO: check usagecontext
         self.request_counter = Counter()
