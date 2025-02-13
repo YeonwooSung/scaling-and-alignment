@@ -58,17 +58,24 @@ def get_kl_controller(config):
         kl_ctrl = FixedKLController(kl_coef=config.critic.kl_ctrl.kl_coef)
     elif config.critic.kl_ctrl.type == 'adaptive':
         assert config.kl_ctrl.horizon > 0, f'horizon must be larger than 0. Got {config.critic.kl_ctrl.horizon}'
-        kl_ctrl = AdaptiveKLController(init_kl_coef=config.critic.kl_ctrl.kl_coef,
-                                       target_kl=config.critic.kl_ctrl.target_kl,
-                                       horizon=config.critic.kl_ctrl.horizon)
+        kl_ctrl = AdaptiveKLController(
+            init_kl_coef=config.critic.kl_ctrl.kl_coef,
+            target_kl=config.critic.kl_ctrl.target_kl,
+            horizon=config.critic.kl_ctrl.horizon,
+        )
     else:
         raise ValueError('Unknown kl_ctrl type')
 
     return kl_ctrl
 
 
-def compute_gae_advantage_return(token_level_rewards: torch.Tensor, values: torch.Tensor, eos_mask: torch.Tensor,
-                                 gamma: torch.Tensor, lam: torch.Tensor):
+def compute_gae_advantage_return(
+    token_level_rewards: torch.Tensor,
+    values: torch.Tensor,
+    eos_mask: torch.Tensor,
+    gamma: torch.Tensor,
+    lam: torch.Tensor
+):
     """Adapted from https://github.com/huggingface/trl/blob/main/trl/trainer/ppo_trainer.py
 
     Args:
@@ -108,10 +115,12 @@ def compute_gae_advantage_return(token_level_rewards: torch.Tensor, values: torc
 
 
 # NOTE(sgm): this implementation only consider outcome supervision, where the reward is a scalar.
-def compute_grpo_outcome_advantage(token_level_rewards: torch.Tensor,
-                                   eos_mask: torch.Tensor,
-                                   index: torch.Tensor,
-                                   epsilon: float = 1e-6):
+def compute_grpo_outcome_advantage(
+    token_level_rewards: torch.Tensor,
+    eos_mask: torch.Tensor,
+    index: torch.Tensor,
+    epsilon: float = 1e-6
+):
     """
     Compute advantage for GRPO, operating only on Outcome reward 
     (with only one scalar reward for each response).
