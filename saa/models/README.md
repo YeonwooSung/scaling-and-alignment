@@ -1,5 +1,5 @@
 # Models
-Common modelzoo such as huggingface/transformers stuggles when using Pytorch native model parallelism. Following the design principle of vLLM, we keep a simple, parallelizable, highly-optimized with packed inputs in saa 
+Common modelzoo such as huggingface/transformers stuggles when using Pytorch native model parallelism. Following the design principle of vLLM, we keep a simple, parallelizable, highly-optimized with packed inputs in saa. 
 ## Adding a New Huggingface Model
 ### Step 1: Copy the model file from HF to verl
 - Add a new file under verl/models/hf

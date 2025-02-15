@@ -58,24 +58,17 @@ def get_kl_controller(config):
         kl_ctrl = FixedKLController(kl_coef=config.critic.kl_ctrl.kl_coef)
     elif config.critic.kl_ctrl.type == 'adaptive':
         assert config.kl_ctrl.horizon > 0, f'horizon must be larger than 0. Got {config.critic.kl_ctrl.horizon}'
-        kl_ctrl = AdaptiveKLController(
-            init_kl_coef=config.critic.kl_ctrl.kl_coef,
-            target_kl=config.critic.kl_ctrl.target_kl,
-            horizon=config.critic.kl_ctrl.horizon,
-        )
+        kl_ctrl = AdaptiveKLController(init_kl_coef=config.critic.kl_ctrl.kl_coef,
+                                       target_kl=config.critic.kl_ctrl.target_kl,
+                                       horizon=config.critic.kl_ctrl.horizon)
     else:
         raise ValueError('Unknown kl_ctrl type')
 
     return kl_ctrl
 
 
-def compute_gae_advantage_return(
-    token_level_rewards: torch.Tensor,
-    values: torch.Tensor,
-    eos_mask: torch.Tensor,
-    gamma: torch.Tensor,
-    lam: torch.Tensor
-):
+def compute_gae_advantage_return(token_level_rewards: torch.Tensor, values: torch.Tensor, eos_mask: torch.Tensor,
+                                 gamma: torch.Tensor, lam: torch.Tensor):
     """Adapted from https://github.com/huggingface/trl/blob/main/trl/trainer/ppo_trainer.py
 
     Args:
@@ -115,12 +108,10 @@ def compute_gae_advantage_return(
 
 
 # NOTE(sgm): this implementation only consider outcome supervision, where the reward is a scalar.
-def compute_grpo_outcome_advantage(
-    token_level_rewards: torch.Tensor,
-    eos_mask: torch.Tensor,
-    index: torch.Tensor,
-    epsilon: float = 1e-6
-):
+def compute_grpo_outcome_advantage(token_level_rewards: torch.Tensor,
+                                   eos_mask: torch.Tensor,
+                                   index: torch.Tensor,
+                                   epsilon: float = 1e-6):
     """
     Compute advantage for GRPO, operating only on Outcome reward 
     (with only one scalar reward for each response).
@@ -137,8 +128,7 @@ def compute_grpo_outcome_advantage(
             shape: (bs, response_length)
     """
     response_length = token_level_rewards.shape[-1]
-    non_zero_mask = (token_level_rewards != 0)
-    scores = (token_level_rewards * non_zero_mask).sum(dim=-1)
+    scores = token_level_rewards.sum(dim=-1)
 
     id2score = defaultdict(list)
     id2mean = {}
@@ -162,6 +152,71 @@ def compute_grpo_outcome_advantage(
         scores = scores.unsqueeze(-1).tile([1, response_length]) * eos_mask
 
     return scores, scores
+
+
+def compute_reinforce_plus_plus_outcome_advantage(token_level_rewards: torch.Tensor, eos_mask: torch.Tensor,
+                                                  gamma: torch.Tensor):
+    """
+    Compute advantage for REINFORCE++. 
+    This implementation is based on the paper: https://arxiv.org/abs/2501.03262
+    Args:
+        token_level_rewards: `(torch.Tensor)`
+            shape: (bs, response_length)
+        eos_mask: `(torch.Tensor)`
+            shape: (bs, response_length)
+    
+    Returns:
+        advantages: `(torch.Tensor)`
+            shape: (bs, response_length)
+        Returns: `(torch.Tensor)`
+            shape: (bs, response_length)
+    """
+
+    with torch.no_grad():
+        returns = torch.zeros_like(token_level_rewards)
+        running_return = 0
+
+        for t in reversed(range(token_level_rewards.shape[1])):
+            running_return = token_level_rewards[:, t] + gamma * running_return
+            returns[:, t] = running_return
+            # Reset after EOS
+            running_return = running_return * eos_mask[:, t]
+
+        advantages = verl_F.masked_whiten(returns, eos_mask)
+        advantages = advantages * eos_mask
+
+    return advantages, returns
+
+
+def compute_remax_outcome_advantage(token_level_rewards: torch.Tensor, reward_baselines: torch.Tensor,
+                                    eos_mask: torch.Tensor):
+    """
+    Compute advantage for ReMax, operating only on Outcome reward 
+    This implementation is based on the paper: https://arxiv.org/abs/2310.10505
+
+    (with only one scalar reward for each response).
+    Args:
+        token_level_rewards: `(torch.Tensor)`
+            shape: (bs, response_length)
+        reward_baselines: `(torch.Tensor)`
+            shape: (bs,)
+        eos_mask: `(torch.Tensor)`
+            shape: (bs, response_length)
+    
+    Returns:
+        advantages: `(torch.Tensor)`
+            shape: (bs, response_length)
+        Returns: `(torch.Tensor)`
+            shape: (bs, response_length)
+    """
+    response_length = token_level_rewards.shape[-1]
+    scores = token_level_rewards.sum(dim=-1)
+
+    with torch.no_grad():
+        returns = (token_level_rewards * eos_mask).flip(dims=[-1]).cumsum(dim=-1).flip(dims=[-1])
+        advantages = returns - reward_baselines.unsqueeze(-1).tile([1, response_length]) * eos_mask
+
+    return advantages, returns
 
 
 def compute_rewards(token_level_scores, old_log_prob, ref_log_prob, kl_ratio):

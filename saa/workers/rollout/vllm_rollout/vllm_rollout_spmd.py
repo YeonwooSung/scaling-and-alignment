@@ -33,11 +33,11 @@ from tensordict import TensorDict
 from torch import nn
 
 from saa import DataProto
-from saa.utils.torch_functional import get_eos_mask, pad_sequence_to_length
+from saa.utils.torch_functional import get_eos_mask, pad_2d_list_to_length
 from saa.workers.rollout.base import BaseRollout
-from saa.third_party.vllm import LLM, vllm_version
-from saa.third_party.vllm import parallel_state as vllm_ps
-from vllm import SamplingParams
+from vllm.distributed import parallel_state as vllm_ps
+from vllm import LLM, SamplingParams
+from saa.third_party.vllm import vllm_version
 
 # TODO
 # 1. support pp in vllm
@@ -56,7 +56,7 @@ def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> List[in
 
 class vLLMRollout(BaseRollout):
 
-    def __init__(self, actor_module: nn.Module, config: DictConfig, tokenizer, model_hf_config, **kwargs):
+    def __init__(self, model_path: str, config: DictConfig, tokenizer, model_hf_config, **kwargs):
         """A vLLM rollout. It requires the module is supported by the vllm.
 
         Args:
@@ -83,30 +83,30 @@ class vLLMRollout(BaseRollout):
             os.environ['MEGATRON_IMPORT_TIMERS'] = '0'
             train_tp = kwargs.get('train_tp', None)
             num_tp_per_train_tp = train_tp // tensor_parallel_size
-            if vllm_version in ('0.4.2', '0.5.4', '0.6.3'):
-                vllm_ps.initialize_parallel_state(tensor_model_parallel_size=tensor_parallel_size,
-                                                  num_tp_per_train_tp=num_tp_per_train_tp)
+            vllm_ps.initialize_parallel_state(tensor_model_parallel_size=tensor_parallel_size,
+                                              num_tp_per_train_tp=num_tp_per_train_tp)
 
         assert model_hf_config.max_position_embeddings >= config.prompt_length + config.response_length, \
             "model context length should be greater than total sequence length"
+
         self.inference_engine = LLM(
-            actor_module,
-            tokenizer=tokenizer,
-            model_hf_config=model_hf_config,
+            model=model_path,
+            enable_sleep_mode=True,
             tensor_parallel_size=tensor_parallel_size,
+            distributed_executor_backend="external_launcher",
             dtype=config.dtype,
             enforce_eager=config.enforce_eager,
             gpu_memory_utilization=config.gpu_memory_utilization,
+            disable_custom_all_reduce=True,
             skip_tokenizer_init=False,
             max_model_len=config.prompt_length + config.response_length,
-            load_format=config.load_format,
             disable_log_stats=config.disable_log_stats,
             max_num_batched_tokens=max_num_batched_tokens,
             enable_chunked_prefill=config.enable_chunked_prefill,
         )
 
         # Offload vllm model to reduce peak memory usage
-        self.inference_engine.offload_model_weights()
+        self.inference_engine.sleep(level=1)
 
         kwargs = dict(
             n=1,
@@ -114,8 +114,8 @@ class vLLMRollout(BaseRollout):
             max_tokens=config.response_length,
         )
 
-        # we may detokenize the result all together later
-        if vllm_version in ('0.4.2', '0.5.4', '0.6.3'):
+        # # we may detokenize the result all together later
+        if vllm_version != '0.3.1':
             kwargs['detokenize'] = False
 
         # supporting adding any sampling params from the config file
@@ -147,7 +147,7 @@ class vLLMRollout(BaseRollout):
     @torch.no_grad()
     def generate_sequences(self, prompts: DataProto, **kwargs) -> DataProto:
         # rebuild vllm cache engine
-        if self.config.free_cache_engine:
+        if vllm_version in ('0.3.1', '0.4.2', '0.5.4', '0.6.3') and self.config.free_cache_engine:
             self.inference_engine.init_cache_engine()
 
         idx = prompts.batch['input_ids']  # (bs, prompt_length)
@@ -178,7 +178,7 @@ class vLLMRollout(BaseRollout):
 
         # users can customize different sampling_params at different run
         with self.update_sampling_params(**kwargs):
-            output = self.inference_engine.generate(
+            outputs = self.inference_engine.generate(
                 prompts=None,  # because we have already convert it to prompt token id
                 sampling_params=self.sampling_params,
                 prompt_token_ids=idx_list,
@@ -186,12 +186,14 @@ class vLLMRollout(BaseRollout):
 
         # TODO(sgm): disable logprob when recompute_log_prob is enable
         # if n = 1: (bs, response_length) ; if n > 1: (bs * n, response_length)
-        response = output[0].to(idx.device)
-        log_probs = output[1].to(idx.device)
 
-        if response.shape[1] < self.config.response_length:
-            response = pad_sequence_to_length(response, self.config.response_length, self.pad_token_id)
-            log_probs = pad_sequence_to_length(log_probs, self.config.response_length, self.pad_token_id)
+        response = []
+        for output in outputs:
+            for sample_id in range(len(output.outputs)):
+                response.append(output.outputs[sample_id].token_ids)
+
+        response = pad_2d_list_to_length(response, self.pad_token_id,
+                                         max_length=self.config.response_length).to(idx.device)
 
         if self.config.n > 1 and do_sample:
             idx = idx.repeat_interleave(self.config.n, dim=0)
@@ -226,7 +228,7 @@ class vLLMRollout(BaseRollout):
             batch_size=batch_size)
 
         # free vllm cache engine
-        if self.config.free_cache_engine:
+        if vllm_version in ('0.3.1', '0.4.2', '0.5.4', '0.6.3') and self.config.free_cache_engine:
             self.inference_engine.free_cache_engine()
 
         return DataProto(batch=batch)
