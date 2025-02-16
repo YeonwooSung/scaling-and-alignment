@@ -19,8 +19,8 @@ from utils import *
 
 # Add the `./reward_models` path to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../reward_models')))
-import base_trainer
-from reward_trainer import SimpleRewardTrainer, RewardDataCollatorWithPadding
+import reward_models.base_trainer as base_trainer
+from reward_models.reward_trainer import SimpleRewardTrainer, RewardDataCollatorWithPadding
 
 
 @dataclass
