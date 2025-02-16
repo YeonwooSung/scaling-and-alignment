@@ -14,10 +14,10 @@
 
 
 def test_import():
-    import saa
-    print(saa.__version__)
+    import verl
+    print(verl.__version__)
 
 
 def test_single_controller_import():
-    import saa.single_controller
-    print(saa.single_controller.__version__)
+    import verl.single_controller
+    print(verl.single_controller.__version__)

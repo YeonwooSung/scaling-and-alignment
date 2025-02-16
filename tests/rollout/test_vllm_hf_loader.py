@@ -16,15 +16,15 @@ import os
 import torch
 import transformers
 
-from saa.third_party.vllm import LLM, vllm_version
-from saa.utils.model import update_model_config
+from verl.third_party.vllm import LLM, vllm_version
+from verl.utils.model import update_model_config
 from vllm import SamplingParams
 from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM
 
 from transformers import GenerationConfig
 
-from saa.utils.torch_functional import pad_sequence_to_length
-from saa.workers.rollout.vllm_rollout.vllm_rollout import _pre_process_inputs
+from verl.utils.torch_functional import pad_sequence_to_length
+from verl.workers.rollout.vllm_rollout.vllm_rollout import _pre_process_inputs
 
 
 def levenshtein(s1, s2):
@@ -80,7 +80,7 @@ def test_vllm_with_hf():
     local_cache_path = '~/.cache/verl/rlhf'
     local_cache_path = os.path.expanduser(local_cache_path)
     hdfs_path = 'deepseek-ai/deepseek-llm-7b-chat'
-    from saa.utils.fs import copy_local_path_from_hdfs
+    from verl.utils.fs import copy_local_path_from_hdfs
     local_model_path = copy_local_path_from_hdfs(src=hdfs_path, cache_dir=local_cache_path)
     tokenizer = AutoTokenizer.from_pretrained(local_model_path)
 

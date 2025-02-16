@@ -23,11 +23,11 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizer, AutoTokenizer
 
-import saa.utils.torch_functional as verl_F
-from saa import DataProto
-from saa.trainer.ppo.ray_trainer import RayPPOTrainer
-from saa.utils.fs import copy_local_path_from_hdfs
-from saa.utils.model import compute_position_id_with_mask
+import verl.utils.torch_functional as verl_F
+from verl import DataProto
+from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+from verl.utils.fs import copy_local_path_from_hdfs
+from verl.utils.model import compute_position_id_with_mask
 from tests.e2e.envs.digit_completion import CharTokenizer
 import pandas as pd
 
@@ -126,8 +126,8 @@ def main(config):
     print(f'Tokenizer vocab_size: {tokenizer.vocab_size}')
 
     # define worker classes
-    from saa.workers.fsdp_workers import ActorRolloutRefWorker, CriticWorker
-    from saa.trainer.ppo.ray_trainer import ResourcePoolManager, Role
+    from verl.workers.fsdp_workers import ActorRolloutRefWorker, CriticWorker
+    from verl.trainer.ppo.ray_trainer import ResourcePoolManager, Role
 
     role_worker_mapping = {
         Role.ActorRollout: ray.remote(ActorRolloutRefWorker),

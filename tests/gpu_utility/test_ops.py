@@ -14,9 +14,9 @@
 
 
 def test_flash_attn_cross_entropy():
-    from saa.utils.torch_functional import logprobs_from_logits_naive
+    from verl.utils.torch_functional import logprobs_from_logits_naive
 
-    from saa.utils.debug import log_gpu_memory_usage
+    from verl.utils.debug import log_gpu_memory_usage
 
     from flash_attn.ops.triton.cross_entropy import cross_entropy_loss
 

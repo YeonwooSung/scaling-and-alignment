@@ -1,6 +1,6 @@
 set -x
 
-python3 -m saa.trainer.main_ppo \
+python3 -m verl.trainer.main_ppo \
     data.train_files=$HOME/data/gsm8k/train.parquet \
     data.val_files=$HOME/data/gsm8k/test.parquet \
     data.train_batch_size=1024 \
